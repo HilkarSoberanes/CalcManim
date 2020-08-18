@@ -1,0 +1,276 @@
+from manimlib.imports import *
+
+#### SUGERENCIA: SIEMPRE QUE CAMBIESLOS VECTORES A VISUALIZAR ###
+### CONDISERA QUE EL PLNO ES DE [-7,7]x[-4,4] ####
+
+#### Propiedades de la definición de un espacio vectorial ####
+
+class Grid(VGroup):
+    CONFIG = {
+        "height": 6.0,
+        "width": 6.0,
+    }
+
+    def __init__(self, rows, columns, **kwargs):
+        digest_config(self, kwargs, locals())
+        super().__init__(**kwargs)
+
+        x_step = self.width / self.columns
+        y_step = self.height / self.rows
+
+        for x in np.arange(0, self.width + x_step, x_step):
+            self.add(Line(
+                [x - self.width / 2., -self.height / 2., 0],
+                [x - self.width / 2., self.height / 2., 0],
+            ))
+        for y in np.arange(0, self.height + y_step, y_step):
+            self.add(Line(
+                [-self.width / 2., y - self.height / 2., 0],
+                [self.width / 2., y - self.height / 2., 0]
+            ))
+
+class ScreenGrid(VGroup):
+    CONFIG = {
+        "rows": 8,
+        "columns": 14,
+        "height": FRAME_Y_RADIUS * 2,
+        "width": 14,
+        "grid_stroke": 0.5,
+        "grid_color": WHITE,
+        "axis_color": RED,
+        "axis_stroke": 2,
+        "labels_scale": 0.25,
+        "labels_buff": 0,
+        "number_decimals": 2
+    }
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        rows = self.rows
+        columns = self.columns
+        grid = Grid(width=self.width, height=self.height, rows=rows, columns=columns)
+        grid.set_stroke(self.grid_color, self.grid_stroke)
+
+        vector_ii = ORIGIN + np.array((- self.width / 2, - self.height / 2, 0))
+        vector_si = ORIGIN + np.array((- self.width / 2, self.height / 2, 0))
+        vector_sd = ORIGIN + np.array((self.width / 2, self.height / 2, 0))
+
+        axes_x = Line(LEFT * self.width / 2, RIGHT * self.width / 2)
+        axes_y = Line(DOWN * self.height / 2, UP * self.height / 2)
+
+        axes = VGroup(axes_x, axes_y).set_stroke(self.axis_color, self.axis_stroke)
+
+        divisions_x = self.width / columns
+        divisions_y = self.height / rows
+
+        directions_buff_x = [UP, DOWN]
+        directions_buff_y = [RIGHT, LEFT]
+        dd_buff = [directions_buff_x, directions_buff_y]
+        vectors_init_x = [vector_ii, vector_si]
+        vectors_init_y = [vector_si, vector_sd]
+        vectors_init = [vectors_init_x, vectors_init_y]
+        divisions = [divisions_x, divisions_y]
+        orientations = [RIGHT, DOWN]
+        labels = VGroup()
+        set_changes = zip([columns, rows], divisions, orientations, [0, 1], vectors_init, dd_buff)
+        for c_and_r, division, orientation, coord, vi_c, d_buff in set_changes:
+            for i in range(1, c_and_r):
+                for v_i, directions_buff in zip(vi_c, d_buff):
+                    ubication = v_i + orientation * division * i
+                    coord_point = round(ubication[coord], self.number_decimals)
+                    label = Text(f"{coord_point}",font="Arial",stroke_width=0).scale(self.labels_scale)
+                    label.next_to(ubication, directions_buff, buff=self.labels_buff)
+                    labels.add(label)
+
+        self.add(grid, axes, labels)
+
+#### Diferentes normas en R^n ####
+
+class Normas(Scene):
+    def construct(self):
+        plano = NumberPlane()
+        intro1 = TextMobject("Veremos como se ve un c\\'{i}rculo unitario")
+        intro2 = TexMobject(r"\text{utilizando diferentes normas en }\mathbb{R}^2")
+        intro2.next_to(intro1,DOWN)
+        intro = VGroup(intro1,intro2)
+        circ1 = TextMobject("Recordemos que la definici\\'{o}n del c\\'{i}rculo es")
+        circ2 = TexMobject(r"\mathbb{S}^1=\{x\in\mathbb{R}^2 : \Vert x \Vert =1\}")
+        circ2.next_to(circ1,DOWN)
+        circ = VGroup(circ1,circ2)
+
+        self.play(Write(intro))
+        self.wait(2)
+        self.play(ReplacementTransform(intro,circ))
+        self.wait(2)
+        self.play(FadeOut(circ))
+
+        #### Norma 1 ####
+
+        title1 = TextMobject("Norma 1")
+        norm1 = TexMobject(r"\Vert x \Vert_1=\vert x_1 \vert + \vert x_2 \vert")
+        norm1.next_to(title1,DOWN)
+        Group1 = VGroup(title1,norm1)
+        Group1.scale(0.75)
+        Group1.set_color(RED)
+        fig1 = Square(side_length=np.sqrt(2),color=RED)
+        fig1.rotate(PI/4)
+
+        self.play(Write(Group1))
+        self.wait()
+        self.play(ApplyMethod(Group1.to_edge,UP))
+        self.play(ShowCreation(plano))
+        self.play(ShowCreation(fig1))
+        self.wait(2)
+        self.play(ApplyMethod(Group1.move_to,np.array([-5,3,0])))
+
+        #### Norma 2 ####
+
+        title2 =TextMobject("Norma 2")
+        norm2 = TexMobject(r"\Vert x \Vert_2=\left(x_1^2 + x_2^2 \right)^{1/2}")
+        norm2.next_to(title2,DOWN)
+        Group2 = VGroup(title2,norm2)
+        Group2.scale(0.75)
+        Group2.set_color(YELLOW)
+        fig2 = Circle(radius=1,color=YELLOW)
+
+        self.play(Write(Group2))
+        self.wait()
+        self.play(ApplyMethod(Group2.to_edge,UP))
+        self.play(ShowCreation(fig2))
+        self.wait(2)
+        self.play(ApplyMethod(Group2.move_to,np.array([5,3,0])))
+
+        #### Norma infinito ####
+
+        title3 = TextMobject("Norma infinito")
+        norminfty = TexMobject(r"\Vert x \Vert_{\infty} = \max\{\vert x_i \vert : i \in \{1,2\}\}")
+        norminfty.next_to(title3,DOWN)
+        Group3 = VGroup(title3,norminfty)
+        Group3.scale(0.75)
+        Group3.set_color(GREEN_SCREEN)
+        fig3 = Square(side_length=2,color=GREEN_SCREEN)
+
+        self.play(Write(Group3))
+        self.wait()
+        self.play(ApplyMethod(Group3.to_edge,UP))
+        self.play(ShowCreation(fig3))
+        self.wait(2)
+        self.remove(Group1,Group2,Group3,plano,fig1,fig2,fig3)
+        
+        #### Norma p ####
+
+        intro1 = TextMobject("Podemos definir una norma similar a las anteriores")
+        intro2 = TexMobject(r"\text{para cada } p\in\mathbb{R},\ p\geq 1")
+        intro2.next_to(intro1,DOWN)
+        intro = VGroup(intro1,intro2)
+        titlep = TexMobject(r"\text{Norma } p")
+        normp = TexMobject(r"\Vert x \Vert_p = \left(\sum_{i=1}^n \vert x_i \vert ^p \right)^{1/p}")
+        normp.next_to(titlep,DOWN)
+        Groupp = VGroup(titlep,normp)
+        text = TextMobject("Veamos que pasa cuando $p$ crece en $\\mathbb{R}$")
+
+        self.play(Write(intro))
+        self.wait(2)
+        self.play(ReplacementTransform(intro,Groupp))
+        self.wait(2)
+        self.play(FadeOut(Groupp))
+        self.play(Write(text))
+        self.play(FadeOut(text))
+        self.play(ShowCreation(plano))
+        self.play(FadeIn(Group3),ShowCreation(fig3))
+        self.play(ApplyMethod(Group3.to_edge,DOWN))
+
+        n = 1
+
+        while n<10:
+            valor_sig = TexMobject(r"p="+str(n))
+            valor_sig.to_edge(UP)
+            self.add(valor_sig)
+            D = []
+            j=0
+            dj=1/16
+            while j<1:
+                dot1 = Dot(radius=0.05,color=PINK)
+                dot1_2 = Dot(radius=0.05,color=PINK)
+                dot1.move_to(np.array([j,(1-j**n)**(1/n),0]))
+                dot1_2.move_to(np.array([(1-j**n)**(1/n),j,0]))
+                D.append(dot1)
+                D.append(dot1_2)
+                j=j+dj
+            j=1
+            while j>0:
+                dot2 = Dot(radius=0.05,color=PINK)
+                dot2_2 = Dot(radius=0.05,color=PINK)
+                dot2.move_to(np.array([j,-(1-j**n)**(1/n),0]))
+                dot2_2.move_to(np.array([-(1-j**n)**(1/n),j,0]))
+                D.append(dot2)
+                D.append(dot2_2)
+                j=j-dj
+            j=0
+            while j>-1:
+                dot3 = Dot(radius=0.05,color=PINK)
+                dot3_2 = Dot(radius=0.05,color=PINK)
+                dot3.move_to(np.array([j,-(1-(-j)**n)**(1/n),0]))
+                dot3_2.move_to(np.array([-(1-(-j)**n)**(1/n),j,0]))
+                D.append(dot3)
+                D.append(dot3_2)
+                j=j-dj
+            j=-1
+            while j<0:
+                dot4 = Dot(radius=0.05,color=PINK)
+                dot4_2 = Dot(radius=0.05,color=PINK)
+                dot4.move_to(np.array([j,(1-(-j)**n)**(1/n),0]))
+                dot4_2.move_to(np.array([(1-(-j)**n)**(1/n),j,0]))
+                D.append(dot4)
+                D.append(dot4_2)
+                j=j+dj
+            puntos = VGroup(*D)
+            self.add(puntos)
+            self.wait(0.5)
+            for i in D:
+                self.remove(i)
+            self.remove(valor_sig)
+            n=round(n + 0.2, 1)
+        self.remove(plano,Group3,fig3)
+        
+        conclus1 = TextMobject("Vemos que tiende al ``c\\'{i}rculo'' que resulta de usar")
+        conclus2 = TextMobject("la norma infinito, de ah\\'{i} su nombre.").next_to(conclus1,DOWN)
+        conclus = VGroup(conclus1,conclus2)
+        ejer = TextMobject("Puedes cambiar el código para verlo con más valores de $p$")
+
+        self.play(Write(ejer))
+        self.wait(2)
+        self.play(FadeOut(ejer))
+        self.play(Write(conclus))
+        self.wait(2)
+        self.play(FadeOut(conclus))
+
+        #### Autores y créditos ####
+
+        autor1 = TextMobject("Bruno Ram\\'{i}rez")
+        autor1.scale(0.8)
+        contact1 = TextMobject("GitHub: @brunormzg")
+        contact1.scale(0.6)
+        contact1.next_to(autor1,DOWN)
+        aut1 = VGroup(autor1,contact1)
+        #aut1.to_edge(UP)
+
+        autor2 = TextMobject("Donaldo Mora")
+        autor2.scale(0.8)
+        autor2.next_to(contact1,DOWN)
+        contact2 = TextMobject("Instagram: donal\\_mora")
+        contact2.scale(0.6)
+        contact2.next_to(autor2,DOWN)
+        aut2 = VGroup(autor2,contact2)
+
+        autor3 = TextMobject("Rodrigo Moreno")
+        autor3.scale(0.8)
+        autor3.next_to(contact2,DOWN)
+        contact3 = TextMobject("Instagram: \\_nosoyro")
+        contact3.scale(0.6)
+        contact3.next_to(autor3,DOWN)
+        aut3 = VGroup(autor3,contact3)
+        #aut3.to_edge(DOWN)
+
+        self.play(Write(aut1),Write(aut2),Write(aut3))
+
